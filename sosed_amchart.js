@@ -1,3 +1,8 @@
+var categoryAxis;
+var chart;
+var chart_data;
+var series;
+var valueAxis;
 function sosed_amchart(map_div_id,
                        sheet_id,
                        table_id,
@@ -37,16 +42,18 @@ function sosed_amchart(map_div_id,
 
     return { parseGSX: parseGSX };
 
-  })();
-  var chart;
+  })();  
   var continents;
-  function update_map(){
+  function update_chart(){
     ParseGSX.parseGSX(sheet_id,function(data){
-      
+      $("#waiting_div").fadeOut(function(){
+        $("#content_div").fadeIn();
+      });
       /*
       * use get for type of chart
       */
-      console.dir(data);
+      $("#title_h1").html(data[0].title);
+
 
       switch(this_type){
         case "frequency":
@@ -57,132 +64,64 @@ function sosed_amchart(map_div_id,
             freq: {}
           };
           
-          
-            
-          
-          
-          
-          var chart = am4core.create(map_div_id, am4charts.XYChart);
-          chart.hiddenState.properties.opacity = 0; // this creates initial fade-in
-
-          chart.paddingRight = 40;
-
+          am4core.useTheme(am4themes_animated);
+          chart = am4core.create(map_div_id, am4charts.XYChart);
           chart.data = [];
-          
           for(var i = 1; i < data.length; i++){
             if(typeof(freq_obj[item].freq[data[i][item]]) == "undefined"){
               freq_obj[item].freq[data[i][item]] = 0;
             }
             freq_obj[item].freq[data[i][item]]++;
           }
-          console.dir("freq_obj");
-          console.dir(freq_obj);
           
           Object.keys(freq_obj[item].freq).forEach(function(sub_item){
             chart.data.push({
-              "name"  : sub_item,
-              "steps" : freq_obj[item].freq[sub_item]
+              "category" :      sub_item,
+              "frequency" : freq_obj[item].freq[sub_item],
+              "color": "am4core.color('red');"
             });
           });
-          console.dir(chart.data);
-
-          var categoryAxis = chart.yAxes.push(new am4charts.CategoryAxis());
-          categoryAxis.dataFields.category = "name";
-          categoryAxis.renderer.grid.template.strokeOpacity = 0;
-          categoryAxis.renderer.minGridDistance = 10;
-          categoryAxis.renderer.labels.template.dx = -40;
-          categoryAxis.renderer.minWidth = 120;
-          categoryAxis.renderer.tooltip.dx = -40;
-
-          var valueAxis = chart.xAxes.push(new am4charts.ValueAxis());
-          valueAxis.renderer.inside = true;
-          valueAxis.renderer.labels.template.fillOpacity = 0.3;
-          valueAxis.renderer.grid.template.strokeOpacity = 0;
-          valueAxis.min = 0;
-          valueAxis.cursorTooltipEnabled = false;
-          valueAxis.renderer.baseGrid.strokeOpacity = 0;
-          valueAxis.renderer.labels.template.dy = 20;
-
-          var series = chart.series.push(new am4charts.ColumnSeries);
-          series.dataFields.valueX = "steps";
-          series.dataFields.categoryY = "name";
-          series.tooltipText = "{valueX.value}";
-          series.tooltip.pointerOrientation = "vertical";
-          series.tooltip.dy = - 30;
-          series.columnsContainer.zIndex = 100;
-
-          var columnTemplate = series.columns.template;
-          columnTemplate.height = am4core.percent(50);
-          columnTemplate.maxHeight = 50;
-          columnTemplate.column.cornerRadius(60, 10, 60, 10);
-          columnTemplate.strokeOpacity = 0;
-
-          series.heatRules.push({ target: columnTemplate, property: "fill", dataField: "valueX", min: am4core.color("#e5dc36"), max: am4core.color("#5faa46") });
-          series.mainContainer.mask = undefined;
-
-          var cursor = new am4charts.XYCursor();
-          chart.cursor = cursor;
-          cursor.lineX.disabled = true;
-          cursor.lineY.disabled = true;
-          cursor.behavior = "none";
-
-          var bullet = columnTemplate.createChild(am4charts.CircleBullet);
-          bullet.circle.radius = 30;
-          bullet.valign = "middle";
-          bullet.align = "left";
-          bullet.isMeasured = true;
-          bullet.interactionsEnabled = false;
-          bullet.horizontalCenter = "right";
-          bullet.interactionsEnabled = false;
-
-          var hoverState = bullet.states.create("hover");
-          var outlineCircle = bullet.createChild(am4core.Circle);
-          outlineCircle.adapter.add("radius", function (radius, target) {
-              var circleBullet = target.parent;
-              return circleBullet.circle.pixelRadius + 10;
-          })
-
-          var image = bullet.createChild(am4core.Image);
-          image.width = 60;
-          image.height = 60;
-          image.horizontalCenter = "middle";
-          image.verticalCenter = "middle";
-          image.propertyFields.href = "href";
-
-          image.adapter.add("mask", function (mask, target) {
-              var circleBullet = target.parent;
-              return circleBullet.circle;
-          })
-
-          var previousBullet;
-          chart.cursor.events.on("cursorpositionchanged", function (event) {
-              var dataItem = series.tooltipDataItem;
-
-              if (dataItem.column) {
-                  var bullet = dataItem.column.children.getIndex(1);
-
-                  if (previousBullet && previousBullet != bullet) {
-                      previousBullet.isHover = false;
-                  }
-
-                  if (previousBullet != bullet) {
-
-                      var hs = bullet.states.getKey("hover");
-                      hs.properties.dx = dataItem.column.pixelWidth;
-                      bullet.isHover = true;
-
-                      previousBullet = bullet;
-                  }
-              }          
-
-          }); // end am4core.ready()
           
           /*
-          
           * build plot here 
-          
           */
           
+          chart.bottomAxesContainer.layout = "horizontal";
+          chart.bottomAxesContainer.reverseOrder = true;
+
+          categoryAxis = chart.yAxes.push(new am4charts.CategoryAxis());
+          categoryAxis.dataFields.category = "category";
+          categoryAxis.renderer.grid.template.strokeOpacity = 1;
+          categoryAxis.renderer.grid.template.location = 1;
+          categoryAxis.renderer.minGridDistance = 20;
+          categoryAxis.fontFamily = "Helvetica";
+          categoryAxis.fontSize = 20;
+          
+          categoryAxis.renderer.labels.template.fill = am4core.color("#069");
+          
+          //categoryAxis.color = "green";
+          
+          valueAxis = chart.xAxes.push(new am4charts.ValueAxis());
+          valueAxis.tooltip.disabled = false;
+          valueAxis.renderer.baseGrid.disabled = true;
+          valueAxis.marginRight = 30;
+          valueAxis.renderer.gridContainer.background.fillOpacity = 0.05;
+          valueAxis.renderer.grid.template.strokeOpacity = 1;
+          valueAxis.title.text = "Votes";
+          valueAxis.fontSize = 20;
+          valueAxis.fontFamily = "Helvetica";
+          
+          valueAxis.renderer.labels.template.fill = am4core.color("#069");
+
+          series = chart.series.push(new am4charts.ColumnSeries());
+          series.dataFields.categoryY = "category";
+          series.dataFields.valueX = "frequency";
+          
+          series.xAxis = valueAxis;
+          
+          series.columns.template.adapter.add("fill", function (fill, target) {
+            return chart.colors.getIndex(target.dataItem.index);
+          });
           
           break;
         case "map":
@@ -332,74 +271,131 @@ function sosed_amchart(map_div_id,
             });
           }
         
-          break;
+        break;
       }
-      
-      
-      
-      
     });
   }
-  update_map();
+  update_chart();
+  
   setInterval(function(){
-    
-    ParseGSX.parseGSX(sheet_id,function(data){
-      
-      if(JSON.stringify(data) !== JSON.stringify(current_data)){
+    var this_gets = get_gets();
+    switch(this_gets.type){
+      case "frequency":
+        ParseGSX.parseGSX(sheet_id,function(data){
+          var freq_obj = {};
+          var item = Object.keys(data[0])[column_number];
+          freq_obj[item] = {
+            text: data[0][item],
+            freq: {}
+          };
+          
+          chart_data = [];
+          
+          for(var i = 1; i < data.length; i++){
+            if(typeof(freq_obj[item].freq[data[i][item]]) == "undefined"){
+              freq_obj[item].freq[data[i][item]] = 0;
+            }
+            freq_obj[item].freq[data[i][item]]++;
+          }
+          
+          Object.keys(freq_obj[item].freq).forEach(function(sub_item){
+            chart_data.push({
+              "category"  : sub_item,
+              "frequency" : freq_obj[item].freq[sub_item]
+            });
+          });
+          
+          ////
+          // list of categories
+          ////
+          var categories = chart_data.map(a => a.category);          
+          
+          categories.forEach(function(this_category){
+            var this_row = chart.data.filter(row => row.category == this_category);
+            if(this_row.length == 0){
+              chart.addData({
+                category: this_category,
+                frequency: 1
+              });
+            }
+          });
+          
+          var chart_categories = chart.data.map(a => a.category);
+          
+          chart_categories.forEach(function(this_category,index){
+            var this_row = chart_data.filter(row => row.category == this_category)[0];
+            if(typeof(this_row) == "undefined"){
+              chart.data[index].frequency = 0;
+            } else {
+              chart.data[index].frequency = this_row.frequency;
+            }
+          });
+          
+          chart.invalidateRawData();
+          
+        });
         
-        current_data = JSON.parse(JSON.stringify(data));
-        var table_content = "<table class='table'>" +
-                              "<thead>" +
-                                "<tr>" +
-                                  "<th scope='col'>Country</th>" +
-                                  "<th scope='col'>Number of people</th>" +
-                                "</tr>" +
-                              "</thead>" +
-                              "<tbody>";
         
-        worldSeries.data = data.map(function(row){
+        break;
+      case "map":
+        ParseGSX.parseGSX(sheet_id,function(data){
           
-          row.id = row.code;
-          
-          var country = am4geodata_data_countries2[row.id];
-          
-          if(row.frequency > 0){
-            row.color = chart.colors.getIndex(continents[country.continent_code]);
+          if(JSON.stringify(data) !== JSON.stringify(current_data)){
+            
+            current_data = JSON.parse(JSON.stringify(data));
+            var table_content = "<table class='table'>" +
+                                  "<thead>" +
+                                    "<tr>" +
+                                      "<th scope='col'>Country</th>" +
+                                      "<th scope='col'>Number of people</th>" +
+                                    "</tr>" +
+                                  "</thead>" +
+                                  "<tbody>";
+            
+            worldSeries.data = data.map(function(row){
+              
+              row.id = row.code;
+              
+              var country = am4geodata_data_countries2[row.id];
+              
+              if(row.frequency > 0){
+                row.color = chart.colors.getIndex(continents[country.continent_code]);
+                
+              }
+              
+              //row.map = country.maps[0];
+              
+              return row;
+            });
+            var row_order = Object.keys(data);
+
+
+            row_order.sort(function(a,b) {
+              return data[a].frequency - data[b].frequency;
+            });
+            
+            data_sorted = [];
+            for(var i = 0; i < data.length; i++){
+              data_sorted[i] = data[row_order[i]];
+            }
+            data_sorted = data_sorted.reverse();
+            
+            data_sorted.forEach(function(row){
+              if(row.frequency !== "" && parseFloat(row.frequency) !== 0){
+                table_content +=  "<tr>"+
+                                    "<td>" + row.country + "</td>" +
+                                    "<td>" + row.frequency + "</td>" +
+                                  "</tr>";					
+              }
+            });
+            
+            
+            table_content += "</tbody>"  + "</table>";
+            $("#" + table_id).html(table_content);
             
           }
-          
-          //row.map = country.maps[0];
-          
-          return row;
         });
-        var row_order = Object.keys(data);
-
-
-        row_order.sort(function(a,b) {
-          return data[a].frequency - data[b].frequency;
-        });
-        
-        data_sorted = [];
-        for(var i = 0; i < data.length; i++){
-          data_sorted[i] = data[row_order[i]];
-        }
-        data_sorted = data_sorted.reverse();
-        
-        data_sorted.forEach(function(row){
-          if(row.frequency !== "" && parseFloat(row.frequency) !== 0){
-            table_content +=  "<tr>"+
-                                "<td>" + row.country + "</td>" +
-                                "<td>" + row.frequency + "</td>" +
-                              "</tr>";					
-          }
-        });
-        
-        
-        table_content += "</tbody>"  + "</table>";
-        $("#" + table_id).html(table_content);
-        
-      }
-    });
-  },5000);                           
-                           
+        break;
+    }
+  },5000); 
 }
