@@ -49,16 +49,25 @@ function sosed_amchart(map_div_id,
       $("#waiting_div").fadeOut(function(){
         $("#content_div").fadeIn();
       });
-      /*
-      * use get for type of chart
-      */
-      $("#title_h1").html(data[0].title);
-
-
+      
       switch(this_type){
         case "frequency":
+          if(column_number == "multi"){
+            chart_obj.all_cols = data[0].columns.split(",");
+            chart_obj.current_col = chart_obj.all_cols[0];
+            column_number = chart_obj.current_col;
+            
+          } 
           var freq_obj = {};
           var item = Object.keys(data[0])[column_number];
+          
+          
+          if(column_number = "multi"){
+            $("#title_h1").html(data[0][item]);
+          } else {
+            $("#title_h1").html(data[0].title);
+          }
+          
           freq_obj[item] = {
             text: data[0][item],
             freq: {}
@@ -76,9 +85,9 @@ function sosed_amchart(map_div_id,
           
           Object.keys(freq_obj[item].freq).forEach(function(sub_item){
             chart.data.push({
-              "category" :      sub_item,
+              "category"  : sub_item,
               "frequency" : freq_obj[item].freq[sub_item],
-              "color": "am4core.color('red');"
+              "color"     : "am4core.color('red');"
             });
           });
           
@@ -97,6 +106,7 @@ function sosed_amchart(map_div_id,
           categoryAxis.fontFamily = "Helvetica";
           categoryAxis.fontSize = 20;
           
+          
           categoryAxis.renderer.labels.template.fill = am4core.color("#069");
           
           //categoryAxis.color = "green";
@@ -110,6 +120,7 @@ function sosed_amchart(map_div_id,
           valueAxis.title.text = "Votes";
           valueAxis.fontSize = 20;
           valueAxis.fontFamily = "Helvetica";
+          valueAxis.maxPrecision = 0;
           
           valueAxis.renderer.labels.template.fill = am4core.color("#069");
 
@@ -277,13 +288,15 @@ function sosed_amchart(map_div_id,
   }
   update_chart();
   
-  setInterval(function(){
+  update_interval = setInterval(function(){
     var this_gets = get_gets();
     switch(this_gets.type){
       case "frequency":
         ParseGSX.parseGSX(sheet_id,function(data){
           var freq_obj = {};
-          var item = Object.keys(data[0])[column_number];
+          console.dir("chart_obj.current_col");
+          console.dir(chart_obj.current_col);
+          var item = Object.keys(data[0])[chart_obj.current_col];
           freq_obj[item] = {
             text: data[0][item],
             freq: {}
