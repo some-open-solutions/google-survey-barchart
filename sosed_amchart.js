@@ -53,7 +53,7 @@ function sosed_amchart(map_div_id,
       switch(this_type){
         case "frequency":
           if(column_number == "multi"){
-            chart_obj.all_cols = data[0].columns.split(",");
+            chart_obj.all_cols = data[0].columns.split("|");
             chart_obj.current_col = chart_obj.all_cols[0];
             column_number = chart_obj.current_col;
             
@@ -62,11 +62,8 @@ function sosed_amchart(map_div_id,
           var item = Object.keys(data[0])[column_number];
           
           
-          if(column_number = "multi"){
-            $("#title_h1").html(data[0][item]);
-          } else {
-            $("#title_h1").html(data[0].title);
-          }
+          $("#title_h1").html(data[0][item]);
+          
           
           freq_obj[item] = {
             text: data[0][item],
@@ -127,12 +124,24 @@ function sosed_amchart(map_div_id,
           series = chart.series.push(new am4charts.ColumnSeries());
           series.dataFields.categoryY = "category";
           series.dataFields.valueX = "frequency";
-          
-          series.xAxis = valueAxis;
+          series.dataFields.fill = "color";
           
           series.columns.template.adapter.add("fill", function (fill, target) {
-            return chart.colors.getIndex(target.dataItem.index);
+            if(typeof(data[0].correct) == "undefined"){
+              return chart.colors.getIndex(target.dataItem.index);
+            } else {
+              
+              var this_index = chart_obj.all_cols.indexOf(chart_obj.current_col);
+              var this_correct_answer = data[0].correct.split("|")[this_index];
+              
+              if(this_correct_answer == target.dataItem.categories.categoryY){
+                return am4core.color('#5cb85c');
+              } else {
+                return am4core.color('#d9534f');
+              }
+            }
           });
+        
           
           break;
         case "map":
@@ -294,8 +303,6 @@ function sosed_amchart(map_div_id,
       case "frequency":
         ParseGSX.parseGSX(sheet_id,function(data){
           var freq_obj = {};
-          console.dir("chart_obj.current_col");
-          console.dir(chart_obj.current_col);
           var item = Object.keys(data[0])[chart_obj.current_col];
           freq_obj[item] = {
             text: data[0][item],
