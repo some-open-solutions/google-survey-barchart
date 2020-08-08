@@ -1,6 +1,7 @@
 var categoryAxis;
 var chart;
 var chart_data;
+var freq_obj;
 var series;
 var valueAxis;
 function sosed_amchart(map_div_id,
@@ -292,6 +293,60 @@ function sosed_amchart(map_div_id,
           }
         
         break;
+        case "wordcloud":
+          
+          var current_response = data[0].separateresponses.split("|")[0];
+        
+          //var current_response = "Helpful";
+          am4core.useTheme(am4themes_animated);
+
+          am4core.useTheme(am4themes_animated);
+          chart = am4core.create(map_div_id, am4plugins_wordCloud.WordCloud);
+          series = chart.series.push(new am4plugins_wordCloud.WordCloudSeries());
+
+          freq_obj = {};
+          valid_columns = data[0].columns.split("|");
+          chart_data = [];
+          
+          valid_columns.forEach(function(column_number){
+            var item = Object.keys(data[0])[column_number];
+            freq_obj[item] = {
+              text: data[0][item],
+              freq: {}
+            };
+            for(var i = 1; i < data.length; i++){
+              if(typeof(freq_obj[item].freq[data[i][item]]) == "undefined"){
+                freq_obj[item].freq[data[i][item]] = 0;
+              }
+              freq_obj[item].freq[data[i][item]]++;
+            }
+          });
+          console.dir("freq_obj");
+          console.dir(freq_obj);
+          
+          series.data = [];
+          
+          Object.keys(freq_obj).forEach(function(this_key){
+            Object.keys(freq_obj[this_key].freq).forEach(function(this_response){
+              if(this_response == current_response){
+                series.data.push({
+                  tag:    freq_obj[this_key].text,
+                  weight: freq_obj[this_key].freq[this_response]
+                });                
+              }
+            });
+          });
+          
+          chart.exporting.menu = new am4core.ExportMenu();
+          series.dataFields.word = "tag";
+          series.dataFields.value = "weight";
+          series.colors = new am4core.ColorSet();
+          series.colors.passOptions = {};
+        
+        
+          $("#title_h1").html(current_response);
+          
+          break;
       }
     });
   }
@@ -415,7 +470,138 @@ function sosed_amchart(map_div_id,
             
           }
         });
-        break;
+        break;   
+      case "wordcloud":
+        ParseGSX.parseGSX(sheet_id,function(data){
+          
+          var current_response = data[0].separateresponses.split("|")[0];
+        
+          
+          update_freq_obj = {};
+          valid_columns = data[0].columns.split("|");
+          chart_data = [];
+          
+          
+          
+          valid_columns.forEach(function(column_number){
+            var item = Object.keys(data[0])[column_number];
+            update_freq_obj[item] = {
+              text: data[0][item],
+              freq: {}
+            };
+            for(var i = 1; i < data.length; i++){
+              if(typeof(update_freq_obj[item].freq[data[i][item]]) == "undefined"){
+                update_freq_obj[item].freq[data[i][item]] = 0;
+              }
+              update_freq_obj[item].freq[data[i][item]]++;
+            }
+          });
+          
+          
+          
+          series_data = [];
+          
+          Object.keys(update_freq_obj).forEach(function(this_key){
+            Object.keys(update_freq_obj[this_key].freq).forEach(function(this_response){
+              if(this_response == current_response){
+                series_data.push({
+                  tag:    update_freq_obj[this_key].text,
+                  weight: update_freq_obj[this_key].freq[this_response]
+                });                
+              }
+            });
+          });
+          
+          if(JSON.stringify(series.data) !== JSON.stringify(series_data)){
+            
+            var tags = series_data.map(a => a.tag);
+            tags.forEach(function(this_tag,tag_index){
+              
+              update_row = series_data.filter(row => row.tag == this_tag);
+              orig_row   = series.data.filter(row => row.tag == this_tag);
+              if(orig_row.length == 0){
+                series.addData({
+                  tag: this_tag,
+                  weight: update_row[0].weight
+                });
+              } else {
+                series.data[tag_index].weight = update_row[0].weight;
+              }
+            });
+            /*
+            
+          
+            categories.forEach(function(this_category){
+              var this_row = chart.data.filter(row => row.category == this_category);
+              if(this_row.length == 0){
+                chart.addData({
+                  category: this_category,
+                  frequency: 1
+                });
+              }
+            });
+            
+            var chart_categories = chart.data.map(a => a.category);
+            
+            chart_categories.forEach(function(this_category,index){
+              var this_row = chart_data.filter(row => row.category == this_category)[0];
+              if(typeof(this_row) == "undefined"){
+                chart.data[index].frequency = 0;
+              } else {
+                chart.data[index].frequency = this_row.frequency;
+              }
+            });
+            */
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            //series.data[0].weight = 7;
+          }
+          
+          //compare series.data to series_data
+          
+          /*
+          var freq_obj = {};
+          var item = Object.keys(data[0])[chart_obj.current_col];
+          freq_obj[item] = {
+            text: data[0][item],
+            freq: {}
+          };
+          
+          chart_data = [];
+          
+          for(var i = 1; i < data.length; i++){
+            if(typeof(freq_obj[item].freq[data[i][item]]) == "undefined"){
+              freq_obj[item].freq[data[i][item]] = 0;
+            }
+            freq_obj[item].freq[data[i][item]]++;
+          }
+          
+          Object.keys(freq_obj[item].freq).forEach(function(sub_item){
+            chart_data.push({
+              "category"  : sub_item,
+              "frequency" : freq_obj[item].freq[sub_item]
+            });
+          });
+          
+          ////
+          // list of categories
+          ////
+          
+          */
+          
+          series.invalidateRawData();
+          
+        });
+        
+        
+        break;        
     }
   },5000); 
 }
